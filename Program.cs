@@ -8,6 +8,7 @@ namespace AdditiveNC
 {        
     class Program
     {
+        //Some simple classes to make data formatting a smidge easier.
         class CLIHatches
         {
             public int id = -1;
@@ -32,30 +33,28 @@ namespace AdditiveNC
 
         static void Main(string[] args)
         {
-            double unitsmultiplier = .001; //Units are default mm or .001m. 
-            string[] lines = System.IO.File.ReadAllLines("test_block.cli");
-            foreach(string line in lines)
+            double unitsmultiplier = .001; //Units default to mm, or .001m. 
+            Queue<string> lines = new Queue<string>(System.IO.File.ReadAllLines("test_block.cli"));
+            string line = lines.Dequeue();
+            while(!(line.Contains("$$GEOMETRYSTART"))) //Parse header
             {
-                if(line.Contains("$$UNITS/"))
+                if (line.Contains("$$UNITS/"))
                 {
-                    unitsmultiplier = .001 * Convert.ToInt32(line.Substring("$$UNITS/".Length));
+                    unitsmultiplier = .001 * Convert.ToDouble(line.Substring("$$UNITS/".Length));
                 }
+                line = lines.Dequeue();
+            }
+            while((!line.Contains("$$GEOMETRYEND"))) //Parse Geometry
+            {
                 if(line.Contains("$$POLYLINE/"))
                 {
                     Polyline p = parsepolyline(line);
-                    foreach(var a in p.points)
-                    {
-                        Console.WriteLine("{0}", a);
-                    }
                 }
                 if(line.Contains("$$HATCHES/"))
                 {
                     CLIHatches h = parsehatches(line);
-                    foreach(var a in h.hatches)
-                    {
-                        Console.WriteLine("{0}", a);
-                    }
                 }
+                line = lines.Dequeue();
             }
         }
         static Polyline parsepolyline(String line)
