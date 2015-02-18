@@ -179,7 +179,9 @@ namespace AdditiveNC
             foreach(Layer layer in layers)
             {
                 
-                asm.Workingstep(String.Format("Layer {0}",i));
+                asm.Workingstep(String.Format("Layer {0} Hatching",i));
+                asm.Rapid();
+                bool firstop = true;
                 foreach(GeomData operation in layer.operations)
                 {   
                     if(operation is CLIHatches)
@@ -187,8 +189,37 @@ namespace AdditiveNC
                         CLIHatches tmp = operation as CLIHatches;
                         foreach(CLIHatch hatch in tmp.hatches)
                         {
-                            asm.GoToXYZ("", hatch.startx * unitsmultiplier, hatch.starty * unitsmultiplier, layer.height * unitsmultiplier);
-                            asm.GoToXYZ("", hatch.endx * unitsmultiplier, hatch.endy * unitsmultiplier, layer.height * unitsmultiplier);
+                            if(firstop)
+                            {
+                                asm.GoToXYZ("HatchStart", hatch.startx * unitsmultiplier, hatch.starty * unitsmultiplier, layer.height * unitsmultiplier);
+                                asm.Feedrate(operation.MetaData.speed);
+                                asm.SpindleSpeed(operation.MetaData.power);
+                                firstop = false;
+                            }
+                            else asm.GoToXYZ("HatchStart", hatch.startx * unitsmultiplier, hatch.starty * unitsmultiplier, layer.height * unitsmultiplier);
+                            asm.GoToXYZ("HatchEnd", hatch.endx * unitsmultiplier, hatch.endy * unitsmultiplier, layer.height * unitsmultiplier);
+                        }
+                    }
+                }
+                
+                asm.Workingstep(String.Format("Layer {0} Polyline",i));
+                foreach(GeomData operation in layer.operations)
+                {
+                    if(operation is Polyline)
+                    {
+                        firstop = true;
+                        asm.Rapid();
+                        Polyline tmp = operation as Polyline;
+                        for(var j=0;j<tmp.numberofpoints;j++)
+                        {
+                            if(firstop)
+                            {
+                                asm.GoToXYZ(String.Format("PolylinePt{0}", j), tmp.points[j].x * unitsmultiplier, tmp.points[j].y * unitsmultiplier, layer.height * unitsmultiplier);
+                                asm.SpindleSpeed(operation.MetaData.power);
+                                asm.Feedrate(operation.MetaData.speed);
+                                firstop = false;
+                            }
+                            else asm.GoToXYZ(String.Format("PolylinePt{0}",j), tmp.points[j].x*unitsmultiplier, tmp.points[j].y*unitsmultiplier, layer.height*unitsmultiplier);
                         }
                     }
                 }
