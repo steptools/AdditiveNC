@@ -194,7 +194,7 @@ namespace AdditiveNC
                 asm.DefineTool(focus,1,1,1,1,1,1);
                 asm.SELCTLTool(toolcount);
                 asm.SetToolIdentifier(Convert.ToString(toolcount), Convert.ToString(toolcount));
-                asm.ToolGeometry("phaser_fmt.stp", Convert.ToString(toolcount));
+                //asm.ToolGeometry("ROD.stp", Convert.ToString(toolcount));
                 focustoolmap[focus] = toolcount;
                 toolcount++;
             }
