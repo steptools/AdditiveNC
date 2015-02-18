@@ -58,7 +58,19 @@ namespace AdditiveNC
             }
             double unitsmultiplier = 1; //Units default to mm. 
             List<Layer> layers = parseFile(args[0],ref unitsmultiplier);
-            CreateNCFile(layers,args[0]+".NC",unitsmultiplier);
+            Dictionary<double, int> dict = new Dictionary<double,int>();
+            foreach (Layer layer in layers)
+            {
+                foreach (GeomData op in layer.operations)
+                {
+                    if (!dict.ContainsKey(op.MetaData.focus))
+                        dict.Add(op.MetaData.focus, 1);
+                    else dict[op.MetaData.focus]++;
+                }
+            }
+            double[] i=new double[dict.Keys.Count];
+            dict.Keys.CopyTo(i,0);
+            CreateNCFile(layers,args[0]+".NC",unitsmultiplier,i);
         }
         static List<Layer> parseFile(String filename,ref double unitsmultiplier)
         {
@@ -170,20 +182,32 @@ namespace AdditiveNC
             }
             return h;
         }
-        static void CreateNCFile(List<Layer>layers,string outname,double unitsmultiplier)
+        static void CreateNCFile(List<Layer> layers, string outname, double unitsmultiplier, double[] focii)
         {
             STEPNCLib.AptStepMaker asm = new STEPNCLib.AptStepMaker();
             asm.NewProjectWithCCandWP(outname,4,"Main");
             asm.Millimeters();
+            int toolcount=1;
+            Dictionary<double, int> focustoolmap = new Dictionary<double,int>(); //Map focus to tools.
+            foreach (double focus in focii) //Make tools.
+            {
+                asm.DefineTool(focus,1,1,1,1,1,1);
+                asm.SELCTLTool(toolcount);
+                asm.SetToolIdentifier(Convert.ToString(toolcount), Convert.ToString(toolcount));
+                asm.ToolGeometry("phaser_fmt.stp", Convert.ToString(toolcount));
+                focustoolmap[focus] = toolcount;
+                toolcount++;
+            }
             int i=0;
             foreach(Layer layer in layers)
             {
-                
-                asm.Workingstep(String.Format("Layer {0} Hatching",i));
+                asm.NestWorkplan(String.Format("Layer {0}",i));
                 foreach(GeomData operation in layer.operations)
-                {   
+                {
+                    asm.LoadTool(focustoolmap[operation.MetaData.focus]);
                     if(operation is CLIHatches)
                     {
+                        asm.Workingstep(String.Format("Layer {0} Hatching", i));
                         asm.Rapid();
                         bool firstop = true;
                         CLIHatches tmp = operation as CLIHatches;
@@ -200,13 +224,9 @@ namespace AdditiveNC
                             asm.GoToXYZ("HatchEnd", hatch.endx * unitsmultiplier, hatch.endy * unitsmultiplier, layer.height * unitsmultiplier);
                         }
                     }
-                }
-                
-                asm.Workingstep(String.Format("Layer {0} Polyline",i));
-                foreach(GeomData operation in layer.operations)
-                {
                     if(operation is Polyline)
                     {
+                        asm.Workingstep(String.Format("Layer {0} Polyline",i));
                         bool firstop = true;
                         asm.Rapid();
                         Polyline tmp = operation as Polyline;
@@ -224,6 +244,7 @@ namespace AdditiveNC
                     }
                 }
                 i++;
+                asm.EndWorkplan();
             }
             asm.SaveAsModules(outname);
             return;
