@@ -180,12 +180,12 @@ namespace AdditiveNC
             {
                 
                 asm.Workingstep(String.Format("Layer {0} Hatching",i));
-                asm.Rapid();
-                bool firstop = true;
                 foreach(GeomData operation in layer.operations)
                 {   
                     if(operation is CLIHatches)
                     {
+                        asm.Rapid();
+                        bool firstop = true;
                         CLIHatches tmp = operation as CLIHatches;
                         foreach(CLIHatch hatch in tmp.hatches)
                         {
@@ -207,7 +207,7 @@ namespace AdditiveNC
                 {
                     if(operation is Polyline)
                     {
-                        firstop = true;
+                        bool firstop = true;
                         asm.Rapid();
                         Polyline tmp = operation as Polyline;
                         for(var j=0;j<tmp.numberofpoints;j++)
