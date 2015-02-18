@@ -56,7 +56,7 @@ namespace AdditiveNC
                 Console.WriteLine("Usage: {0} [filename]", System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName);
                 return;
             }
-            double unitsmultiplier = .001; //Units default to mm, or .001m. 
+            double unitsmultiplier = 1; //Units default to mm. 
             List<Layer> layers = parseFile(args[0],ref unitsmultiplier);
             CreateNCFile(layers,args[0]+".NC",unitsmultiplier);
         }
@@ -68,7 +68,7 @@ namespace AdditiveNC
             {
                 if (line.Contains("$$UNITS/"))
                 {
-                    unitsmultiplier = .001 * Convert.ToDouble(line.Substring("$$UNITS/".Length));
+                    unitsmultiplier = Convert.ToDouble(line.Substring("$$UNITS/".Length));
                 }
                 line = lines.Dequeue();
             }
